@@ -1,0 +1,15 @@
+{
+  "name": "pro-trading-demo",
+  "version": "1.0.0",
+  "description": "Pro Trading Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-telegram-bot-api": "^0.64.0",
+    "socket.io": "^4.7.4"
+  }
+}
