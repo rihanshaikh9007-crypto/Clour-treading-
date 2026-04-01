@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Trading App</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; color: #333; }
+        .app-container { width: 100%; max-width: 414px; background: #f7f8ff; min-height: 100vh; position: relative; padding-bottom: 70px; display: none; overflow-x: hidden;}
+        
+        /* --- LOGIN SCREEN (Like Screenshot) --- */
+        .login-screen { width: 100%; max-width: 414px; background: #fff; min-height: 100vh; position: absolute; top:0; z-index: 100; display: flex; flex-direction: column; }
+        .login-header { background: linear-gradient(135deg, #2b62ff, #0039cb); color: white; padding: 40px 20px 20px; font-size: 24px; font-weight: bold; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .login-tabs { display: flex; justify-content: space-around; margin: 20px; border-bottom: 2px solid #eee; }
+        .tab { padding: 10px; color: #888; font-weight: bold; cursor: pointer; }
+        .tab.active { color: #2b62ff; border-bottom: 3px solid #2b62ff; }
+        .login-form { padding: 20px; }
+        .input-box { display: flex; align-items: center; border: 1px solid #ddd; border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; background: #fafafa; }
+        .input-box i { color: #2b62ff; margin-right: 15px; }
+        .input-box input { border: none; outline: none; width: 100%; font-size: 16px; background: transparent; }
+        .btn-login { background: #2b62ff; color: white; width: 100%; padding: 15px; border: none; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(43,98,255,0.3); margin-bottom: 15px; }
+        .btn-register { background: white; color: #2b62ff; width: 100%; padding: 15px; border: 2px solid #2b62ff; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; }
+
+        /* --- MAIN APP HEADER & BALANCE --- */
+        .top-nav { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .balance-card { background: white; margin: 15px; padding: 20px; border-radius: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .balance-card h1 { font-size: 28px; color: #333; margin: 10px 0; }
+        .action-btns { display: flex; gap: 10px; justify-content: center; }
+        .act-btn { flex: 1; padding: 10px; border-radius: 50px; font-weight: bold; cursor: pointer; border: none; color: white; }
+        .btn-withdraw { background: #ff4d4f; } .btn-deposit { background: #4caf50; }
+
+        /* --- WINGO GAME SECTION (Like Video) --- */
+        .game-tabs { display: flex; background: white; margin: 0 15px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .g-tab { flex: 1; text-align: center; padding: 15px 5px; font-size: 12px; font-weight: bold; color: #666; cursor: pointer; border-right: 1px solid #eee; }
+        .g-tab.active { background: linear-gradient(180deg, #e3f2fd, #bbdefb); color: #2b62ff; }
+        .g-tab i { font-size: 20px; display: block; margin-bottom: 5px; }
+
+        .game-area { background: white; margin: 15px; padding: 15px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .timer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;}
+        .timer-box { font-size: 24px; font-weight: bold; color: #ff4d4f; background: #fff0f0; padding: 5px 10px; border-radius: 5px; }
+
+        /* Buttons & Balls */
+        .color-btns { display: flex; gap: 10px; margin-bottom: 15px; }
+        .c-btn { flex: 1; padding: 12px 0; border: none; border-radius: 5px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .bg-green { background: #4caf50; } .bg-violet { background: #9c27b0; } .bg-red { background: #ff4d4f; }
+        
+        .number-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px; }
+        .num-ball { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 22px; font-weight: bold; margin: 0 auto; cursor: pointer; box-shadow: inset -2px -2px 5px rgba(0,0,0,0.2); color: white;}
+        .n-red { background: linear-gradient(135deg, #ff8a80, #ff4d4f); }
+        .n-green { background: linear-gradient(135deg, #81c784, #4caf50); }
+        .n-violet { background: linear-gradient(135deg, #ce93d8, #9c27b0); }
+
+        .size-btns { display: flex; gap: 10px; }
+        .s-btn { flex: 1; padding: 12px; border: none; border-radius: 5px; color: white; font-weight: bold; font-size: 16px; cursor: pointer; }
+        .bg-orange { background: #ff9800; } .bg-blue { background: #2196f3; }
+
+        /* --- GAME HISTORY TABLE --- */
+        .history-section { background: white; margin: 15px; border-radius: 15px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .history-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+        .history-table th { background: #2b62ff; color: white; padding: 12px; font-size: 12px; }
+        .history-table td { padding: 12px; border-bottom: 1px solid #eee; }
+        .dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; }
+
+        /* --- BOTTOM NAV --- */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 414px; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 10; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 12px; cursor: pointer; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; }
+        .nav-item.active { color: #2b62ff; }
+
+        /* Popup */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index: 1000; }
+        .congrats-box { background: #fff; width: 300px; padding: 30px; border-radius: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+    <div class="login-header">
+        <i class="fas fa-chevron-left" style="margin-bottom: 20px; display: block;"></i>
+        Log in<br>
+        <span style="font-size: 14px; font-weight: normal;">Please log in with your phone number</span>
+    </div>
+    
+    <div class="login-tabs">
+        <div class="tab active">Phone number</div>
+        <div class="tab">Email Login</div>
+    </div>
+
+    <div class="login-form">
+        <div class="input-box">
+            <i class="fas fa-mobile-alt"></i>
+            <span style="margin-right: 10px; color:#666;">+91</span>
+            <input type="number" placeholder="Phone number" id="mobInput">
+        </div>
+        <div class="input-box">
+            <i class="fas fa-lock"></i>
+            <input type="password" placeholder="Password" id="passInput">
+        </div>
+        <button class="btn-login" onclick="doLogin()">Log in</button>
+        <button class="btn-register">Register</button>
+    </div>
+</div>
+
+<div class="app-container" id="mainApp">
+    
+    <div class="top-nav">
+        <span>Pro Platform</span>
+        <i class="fas fa-headset" style="color: #2b62ff;"></i>
+    </div>
+
+    <div class="balance-card">
+        <p style="color: #666; font-size: 14px;">Wallet balance</p>
+        <h1 id="balanceDisplay">₹0.00</h1>
+        <div class="action-btns">
+            <button class="act-btn btn-withdraw" onclick="alert('Withdraw logic pending')">Withdraw</button>
+            <button class="act-btn btn-deposit" onclick="alert('Deposit page logic pending')">Deposit</button>
+        </div>
+    </div>
+
+    <div class="game-tabs">
+        <div class="g-tab"><i class="fas fa-clock"></i>WinGo<br>30sec</div>
+        <div class="g-tab active"><i class="fas fa-clock"></i>WinGo<br>1 Min</div>
+        <div class="g-tab"><i class="fas fa-clock"></i>WinGo<br>3 Min</div>
+        <div class="g-tab"><i class="fas fa-clock"></i>WinGo<br>5 Min</div>
+    </div>
+
+    <div class="game-area">
+        <div class="timer-header">
+            <div>
+                <div style="font-size: 14px; color: #666;">Period</div>
+                <div style="font-weight: bold; font-size: 18px;" id="periodDisplay">Loading...</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 14px; color: #666;">Time remaining</div>
+                <div class="timer-box" id="timerDisplay">00:00</div>
+            </div>
+        </div>
+
+        <div class="color-btns">
+            <button class="c-btn bg-green" onclick="placeBet('Green')">Green</button>
+            <button class="c-btn bg-violet" onclick="placeBet('Violet')">Violet</button>
+            <button class="c-btn bg-red" onclick="placeBet('Red')">Red</button>
+        </div>
+
+        <div class="number-grid">
+            <div class="num-ball n-red" onclick="placeBet('0')">0</div>
+            <div class="num-ball n-green" onclick="placeBet('1')">1</div>
+            <div class="num-ball n-red" onclick="placeBet('2')">2</div>
+            <div class="num-ball n-green" onclick="placeBet('3')">3</div>
+            <div class="num-ball n-red" onclick="placeBet('4')">4</div>
+            <div class="num-ball n-violet" onclick="placeBet('5')">5</div>
+            <div class="num-ball n-red" onclick="placeBet('6')">6</div>
+            <div class="num-ball n-green" onclick="placeBet('7')">7</div>
+            <div class="num-ball n-red" onclick="placeBet('8')">8</div>
+            <div class="num-ball n-green" onclick="placeBet('9')">9</div>
+        </div>
+
+        <div class="size-btns">
+            <button class="s-btn bg-orange" onclick="placeBet('Big')">Big</button>
+            <button class="s-btn bg-blue" onclick="placeBet('Small')">Small</button>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Number</th>
+                    <th>Big Small</th>
+                    <th>Color</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item"><i class="fas fa-home"></i>Home</div>
+        <div class="nav-item"><i class="fas fa-gift"></i>Activity</div>
+        <div class="nav-item active"><i class="fas fa-gamepad"></i>WinGo</div>
+        <div class="nav-item"><i class="fas fa-wallet"></i>Wallet</div>
+        <div class="nav-item"><i class="fas fa-user"></i>Account</div>
+    </div>
+</div>
+
+<div class="modal" id="resultModal">
+    <div class="congrats-box">
+        <h2 id="popupTitle" style="color: #2b62ff;">Result</h2>
+        <p style="color: #666;">Period: <span id="popupPeriod"></span></p>
+        <h1 id="popupAmount" style="color: #4caf50; margin: 15px 0;">₹0.00</h1>
+        <button style="background: #2b62ff; color: white; width: 100%; padding: 12px; border:none; border-radius: 50px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('resultModal').style.display='none'">Confirm</button>
+    </div>
+</div>
+
+<script>
+    const socket = io();
+
+    function doLogin() {
+        if(document.getElementById('mobInput').value.length >= 10) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        } else { alert("Please enter a valid 10-digit phone number"); }
+    }
+
+    socket.on('timerUpdate', (data) => {
+        let secs = data.timeLeft < 10 ? '0' + data.timeLeft : data.timeLeft;
+        document.getElementById('timerDisplay').innerText = `00:${secs}`;
+        document.getElementById('periodDisplay').innerText = data.period;
+        document.getElementById('balanceDisplay').innerText = `₹${data.balance.toFixed(2)}`;
+    });
+
+    socket.on('historyUpdate', (history) => {
+        let tbody = document.getElementById('historyBody');
+        tbody.innerHTML = '';
+        history.forEach(row => {
+            let colorCode = row.color === 'Red' ? '#ff4d4f' : (row.color === 'Green' ? '#4caf50' : '#9c27b0');
+            tbody.innerHTML += `
+                <tr>
+                    <td>${row.period}</td>
+                    <td style="font-weight: bold; font-size:18px; color:${colorCode}">${row.number}</td>
+                    <td>${row.size}</td>
+                    <td><span class="dot" style="background:${colorCode}"></span></td>
+                </tr>
+            `;
+        });
+    });
+
+    socket.on('gameResult', (data) => {
+        if (data.betColor) {
+            document.getElementById('popupPeriod').innerText = data.period;
+            document.getElementById('popupAmount').innerText = data.isWin ? `+₹${data.winAmount.toFixed(2)}` : `-₹100.00`;
+            document.getElementById('popupAmount').style.color = data.isWin ? '#4caf50' : '#ff4d4f';
+            document.getElementById('popupTitle').innerText = data.isWin ? 'Congratulations!' : 'Sorry, You Lost';
+            document.getElementById('resultModal').style.display = 'flex';
+        }
+    });
+
+    function placeBet(type) {
+        fetch('/api/bet', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ color: type, amount: 100 })
+        }).then(res => res.json()).then(data => {
+            if(!data.success) alert(data.msg);
+            else alert(`Successfully placed bet on ${type}!`);
+        });
+    }
+</script>
+
+</body>
+</html>
